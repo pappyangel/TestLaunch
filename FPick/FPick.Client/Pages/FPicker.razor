@@ -2,6 +2,7 @@
 @rendermode InteractiveAuto
 @inject ILogger<FPicker> logger;
 @inject IJSRuntime jsRuntime;
+@inject NavigationManager NavigationManager
 
 <h3>File Picker</h3>
 <PageTitle>File Picker</PageTitle>
@@ -11,15 +12,15 @@
         <h3 style="text-align:center">File Picker Form</h3>
     </div>
     <div class="card-body">
-        <EditForm Enhance Model="@myFile" method="post" FormName="myFileForm" OnSubmit="SubmitForm">
+        <EditForm Enhance Model="@myFile" method="post" FormName="myFileForm" OnSubmit="SubmitFormAsync">
             <div class="row">
                 <div class="col">
                     <label>File to upload</label> <br /><br />
-                    <InputFile OnChange="@ShowPreview" /> <br />
+                    <InputFile id="blazIF1" OnChange="@ShowPreviewAsync" /> <br />
                 </div> @*column left *@
                 <div class="col">
                     <label>This is your selected image</label> <br /><br />
-                    <img id="pageimage" height=auto width="175" src=@fileName alt="Select an image to share">
+                    <img id="pageimage" height=auto width="175" src="./Images/No Image Selected.png" alt="Select an image to share">
                 </div> @*column right *@
             </div> @*row *@
             <br />
@@ -38,33 +39,37 @@
     [SupplyParameterFromForm]
     private FPickModel myFile { get; set; } = new();
     private IBrowserFile ibFile = null!;
-    @* private int maxFiles = 5; *@
-    private string? fileName;
-
-
-
-    protected override void OnInitialized()
+    private IJSObjectReference? jsModule;
+    private string? fileName = "./Images/No Image Selected.png";
+    
+    protected async override Task OnAfterRenderAsync(bool firstRender)
     {
-
-        logger.LogInformation("OnInitialized");
-        fileName = "./Images/No Image Selected.png";
-
+        if (firstRender)
+            jsModule = await jsRuntime.InvokeAsync<IJSObjectReference>("import", "./Pages/FPicker.razor.js");
     }
-    private void SubmitForm()
+    private async Task SubmitFormAsync()
     {
+        await jsModule!.InvokeVoidAsync("blazorRevokeObjectURL");
         logger.LogInformation("Form submitted");
+        NavigationManager.NavigateTo("/");
     }
 
-    @* private async Task ShowPreview(InputFileChangeEventArgs e) *@
-    private void ShowPreview(InputFileChangeEventArgs e)
+    private async Task ShowPreviewAsync(InputFileChangeEventArgs e)
+    @* private void ShowPreview(InputFileChangeEventArgs e) *@
     {
         ibFile = e.File;
-        myFile.FileName = ibFile.Name;
-        logger.LogInformation(myFile.FileName);
-        var jsFile = e.File;
-        @* var bobo = await jsRuntime.InvokeAsync<string>("URL.createObjectURL", jsFile); *@
-
-
-
+        if (ibFile != null)
+        {
+            fileName = ibFile!.Name;
+            await jsModule!.InvokeVoidAsync("loadFileJS2");
+            @* await jsModule.InvokeVoidAsync("debugMsg"); *@
+            
+            logger.LogInformation("File: " + fileName);
+        }
+        else 
+        {            
+            //await jsRuntime.InvokeVoidAsync("ResetFilePicker");
+            logger.LogInformation("Issue with file Good");
+        }
     }
 }
