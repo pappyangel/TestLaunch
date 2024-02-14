@@ -24,7 +24,7 @@
     private async Task IncrementCount()
     {
         currentCount+=15;
-        await jsModule.InvokeVoidAsync("displayCount", currentCount);
-        subMessage = await jsModule.InvokeAsync<string>("createMessage", currentCount);
+        await jsModule!.InvokeVoidAsync("displayCount", currentCount);
+        subMessage = await jsModule!.InvokeAsync<string>("createMessage", currentCount);
     }
 }
